@@ -1,0 +1,21 @@
+bug_id,title,description,stack_trace,resolution,component,severity
+BUG-001,Null Pointer Exception during Login,"Application crashes when a user clicks Login without a valid session.","java.lang.NullPointerException at LoginService.authenticate(LoginService.java:54)","Added null check before accessing user object.","Authentication",High
+BUG-002,Database Connection Timeout,"The application cannot establish a connection to the MySQL database after multiple retries.","com.mysql.jdbc.exceptions.CommunicationsException","Increased timeout and optimized database connection pool.","Database",Critical
+BUG-003,File Upload Failure,"Uploading files larger than 10MB results in an Internal Server Error.","java.io.IOException","Increased upload size limit and added exception handling.","File Service",Medium
+BUG-004,Memory Leak in Background Service,"Memory usage continuously increases after running scheduled tasks for several hours.","java.lang.OutOfMemoryError","Released unused objects and optimized cache cleanup.","Scheduler",Critical
+BUG-005,API Returns 500 Error,"REST API returns HTTP 500 when invalid JSON payload is submitted.","org.springframework.http.converter.HttpMessageNotReadableException","Added input validation before processing request.","API",High
+BUG-006,Duplicate User Registration,"Users can register multiple accounts using the same email address.","No Exception","Added unique constraint on email field.","Authentication",High
+BUG-007,Password Reset Email Not Sent,"Password reset emails are not delivered due to SMTP authentication failure.","javax.mail.AuthenticationFailedException","Updated SMTP credentials and retry mechanism.","Email Service",Medium
+BUG-008,Application Slow During Search,"Search response time exceeds 20 seconds for large datasets.","No Exception","Added database indexing and pagination.","Search",Medium
+BUG-009,404 Error on Dashboard,"Dashboard page returns HTTP 404 after deployment.","org.springframework.web.servlet.NoHandlerFoundException","Corrected routing configuration.","Frontend",Low
+BUG-010,Session Expires Immediately,"User session expires immediately after successful login.","No Exception","Updated session timeout configuration.","Authentication",Medium
+BUG-011,Payment Gateway Failure,"Transactions fail while processing online payments.","java.net.SocketTimeoutException","Added retry mechanism and optimized gateway timeout.","Payments",Critical
+BUG-012,CSV Export Generates Empty File,"CSV export completes successfully but downloaded file is empty.","java.io.FileNotFoundException","Corrected file generation logic.","Reporting",Medium
+BUG-013,High CPU Usage,"CPU utilization reaches 100% during report generation.","No Exception","Optimized report generation algorithm.","Reporting",High
+BUG-014,Missing CSS After Deployment,"Application UI loads without CSS after deployment.","No Exception","Corrected static resource mapping.","Frontend",Low
+BUG-015,JWT Token Validation Failed,"JWT tokens become invalid after server restart.","io.jsonwebtoken.SignatureException","Used persistent signing key.","Security",High
+BUG-016,Redis Cache Not Updating,"Updated records are not reflected because cache remains stale.","No Exception","Implemented cache invalidation.","Caching",Medium
+BUG-017,Kafka Consumer Stops Processing,"Consumer stops receiving messages after broker restart.","org.apache.kafka.common.errors.TimeoutException","Implemented automatic reconnection.","Messaging",Critical
+BUG-018,Docker Container Crash,"Container exits immediately after deployment.","java.lang.IllegalStateException","Fixed missing environment variables.","Deployment",Critical
+BUG-019,Permission Denied Error,"Users with Admin role cannot access the settings page.","org.springframework.security.access.AccessDeniedException","Updated role configuration.","Authorization",High
+BUG-020,Email Notifications Sent Twice,"Duplicate emails are generated for each notification.","No Exception","Removed duplicate event listeners.","Notification",Medium
