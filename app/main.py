@@ -1,10 +1,12 @@
+from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from sentence_transformers import SentenceTransformer
 import chromadb
-import shutil
 import os
+import json
 
 from app.parser import extract_text
+from app.agents.orchestrator import BugAnalysisOrchestrator
 
 app = FastAPI(title="AI Smart Bug Analyzer & Fix Advisor")
 
@@ -20,6 +22,9 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 # Connect to ChromaDB
 client = chromadb.PersistentClient(path="chroma_db")
 collection = client.get_collection("bug_reports")
+
+# Initialize Multi-Agent Orchestrator
+orchestrator = BugAnalysisOrchestrator()
 
 
 @app.get("/")
@@ -63,6 +68,7 @@ async def submit_bug(
 
         extracted_text = extract_text(file_path)
 
+    # Use either pasted text or extracted file text
     query = bug_text if bug_text else extracted_text
 
     if not query.strip():
@@ -71,13 +77,31 @@ async def submit_bug(
             detail="Please provide bug text or upload a valid file."
         )
 
+    # ============================
+    # Run Multi-Agent Analysis
+    # ============================
+    analysis = orchestrator.analyze_bug(query)
+
+    # ============================
+    # Save Analysis History
+    # ============================
+    os.makedirs("analysis", exist_ok=True)
+
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S.json")
+
+    with open(os.path.join("analysis", filename), "w") as f:
+        json.dump(analysis, f, indent=4)
+
+    # ============================
+    # Similarity Search (Milestone 1)
+    # ============================
     query_embedding = model.encode(query).tolist()
 
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=3,
         include=["documents", "metadatas", "distances"]
-        )
+    )
 
     similar_bugs = []
 
@@ -90,10 +114,12 @@ async def submit_bug(
             "description": results["documents"][0][i],
             "severity": metadata.get("severity"),
             "component": metadata.get("component"),
-            "solution": metadata.get("solution")
+            "solution": metadata.get("solution"),
+            "similarity_score": round(1 - results["distances"][0][i], 4)
         })
 
     return {
         "submitted_bug": query,
+        "analysis": analysis,
         "similar_bugs": similar_bugs
     }

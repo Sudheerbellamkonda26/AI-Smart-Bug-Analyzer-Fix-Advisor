@@ -1,53 +1,150 @@
-# AI Smart Bug Analyzer & Fix Advisor
+# 🐞 AI Smart Bug Analyzer & Fix Advisor
 
-## Overview
+An AI-powered bug analysis system that leverages **Retrieval-Augmented Generation (RAG)**, **semantic search**, and a **multi-agent architecture** to analyze software bugs, identify root causes, and retrieve similar historical defects for faster debugging.
 
-AI Smart Bug Analyzer & Fix Advisor is a Retrieval-Augmented Generation (RAG) based application that helps developers analyze software bugs by comparing them with historical defect reports. It uses semantic search to retrieve similar bugs and suggests possible solutions.
+---
 
-## Features
+## 🚀 Features
 
-- Submit bug reports as text
-- Upload bug reports (.txt, .log, .pdf)
-- Extract bug information automatically
-- Generate embeddings using Sentence Transformers
-- Store historical bugs in ChromaDB
-- Retrieve similar bugs using semantic search
-- Suggest possible resolutions based on historical defects
-- REST API built with FastAPI
+### 📥 Bug Submission
+- Submit bug reports as plain text
+- Upload `.txt`, `.log`, and `.pdf` files
+- Automatic text extraction from uploaded files
 
-## Tech Stack
+### 🤖 Multi-Agent Analysis
+- **Triage Agent**
+  - Classifies severity
+  - Assigns priority
+  - Identifies affected component
+  - Provides confidence score and reasoning
 
-- Python
-- FastAPI
-- Sentence Transformers
-- ChromaDB
-- Hugging Face
-- PyPDF2
-- Uvicorn
+- **Log Analysis Agent**
+  - Extracts exception type
+  - Identifies failure point
+  - Extracts code path
+  - Captures error messages
 
-## Project Structure
+- **Root Cause Agent**
+  - Analyzes bug reports
+  - Determines probable root cause
+  - Returns confidence score
+
+### 🔍 Semantic Similarity Search
+- Sentence Transformer embeddings
+- ChromaDB vector database
+- Retrieves top similar historical bugs
+- Displays previous solutions
+
+### 📊 Analysis History
+- Saves every analysis as JSON
+- Maintains historical analysis records
+
+### ✅ Validation Suite
+- Automated validation for multiple bug scenarios
+- Accuracy measurement for:
+  - Triage Agent
+  - Log Analysis Agent
+  - Root Cause Agent
+
+---
+
+# 🏗 System Architecture
 
 ```
+                   User
+                     │
+                     ▼
+          FastAPI Bug Submission
+                     │
+      ┌──────────────┴──────────────┐
+      │                             │
+      ▼                             ▼
+ Text Input                   File Upload
+      │                             │
+      └──────────────┬──────────────┘
+                     ▼
+        Bug Analysis Orchestrator
+                     │
+     ┌───────────────┼────────────────┐
+     ▼               ▼                ▼
+ Triage Agent   Log Analysis    Root Cause Agent
+                     │
+                     ▼
+        Semantic Similarity Search
+              (ChromaDB + RAG)
+                     │
+                     ▼
+             Structured JSON Response
+```
+
+---
+
+# 📂 Project Structure
+
+```text
 AI-Smart-Bug-Analyzer/
 │
 ├── app/
-├── datasets/
-├── docs/
-├── uploads/
+│   ├── agents/
+│   │   ├── triage_agent.py
+│   │   ├── log_analysis_agent.py
+│   │   ├── root_cause_agent.py
+│   │   └── orchestrator.py
+│   │
+│   ├── embeddings.py
+│   ├── load_data.py
+│   ├── parser.py
+│   ├── similarity.py
+│   ├── vectordb.py
+│   └── main.py
+│
 ├── chroma_db/
-├── README.md
+├── datasets/
+├── uploads/
+├── analysis/
+├── docs/
+├── tests/
+│
 ├── requirements.txt
+├── README.md
 └── .gitignore
 ```
 
-## Installation
+---
+
+# ⚙️ Technology Stack
+
+### Backend
+- Python
+- FastAPI
+- Uvicorn
+
+### AI & Machine Learning
+- Sentence Transformers
+- Hugging Face
+- Retrieval-Augmented Generation (RAG)
+
+### Vector Database
+- ChromaDB
+
+### File Processing
+- PyPDF2
+
+### Testing
+- Python Validation Suite
+
+---
+
+# 📦 Installation
 
 ```bash
 git clone <repository-url>
+
 cd AI-Smart-Bug-Analyzer
 
 python -m venv venv
 
+# Windows
 venv\Scripts\activate
 
 pip install -r requirements.txt
@@ -55,21 +152,83 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## API
+---
 
-### POST /submit
+# 🌐 API Endpoints
 
-Submit a bug report for semantic similarity search.
+## GET /
 
-## Future Enhancements
+Health check endpoint.
 
-- Multi-Agent Architecture
-- Root Cause Analysis Agent
-- Duplicate Bug Detection
-- AI Fix Recommendation
-- Severity Prediction
-- Dashboard and Analytics
+### Response
 
-## Author
+```json
+{
+    "message": "AI Smart Bug Analyzer & Fix Advisor is Running 🚀"
+}
+```
 
-Sudheer Bellamkonda
+---
+
+## POST /submit
+
+Submit a bug report for analysis.
+
+### Supports
+
+- Text input
+- TXT files
+- LOG files
+- PDF files
+
+### Response
+
+```json
+{
+    "submitted_bug": "...",
+    "analysis": {
+        "triage": {},
+        "log_analysis": {},
+        "root_cause": {}
+    },
+    "similar_bugs": []
+}
+```
+
+---
+
+# ✅ Validation
+
+The backend has been validated using multiple bug scenarios, including:
+
+- NullPointerException
+- IndexOutOfBoundsException
+- FileNotFoundException
+- SQLException
+- SocketTimeoutException
+- Authentication Failure
+- UI Issues
+- Database Timeout
+
+---
+
+# 🔮 Future Enhancements
+
+- Duplicate Detection Agent
+- AI Fix Recommendation Agent
+- Report Generation Agent
+- Interactive Dashboard
+- Authentication & User Accounts
+- Bug Analytics
+- Docker Deployment
+- CI/CD Pipeline
+
+---
+
+# 👨‍💻 Author
+
+**Sudheer Bellamkonda**
+
+B.Tech – Artificial Intelligence & Machine Learning
+
+AI | Machine Learning | FastAPI | RAG | Multi-Agent Systems

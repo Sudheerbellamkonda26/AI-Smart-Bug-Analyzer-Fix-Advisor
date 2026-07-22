@@ -1,0 +1,15 @@
+{
+    "triage": {
+        "severity": "High",
+        "priority": "P1",
+        "component": "Authentication",
+        "confidence": 0.95,
+        "reasoning": "Critical exception or crash detected."
+    },
+    "log_analysis": {
+        "exception_type": "NullPointerException",
+        "failure_point": "LoginService.java:42",
+        "code_path": "com.example.auth.LoginService.login",
+        "error_message": "NullPointerException"
+    }
+}
