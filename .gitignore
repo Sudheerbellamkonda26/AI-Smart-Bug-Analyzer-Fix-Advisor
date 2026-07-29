@@ -20,3 +20,6 @@ uploads/
 
 # Logs
 *.log
+
+# Analysis output
+analysis/

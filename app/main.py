@@ -1,15 +1,53 @@
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from sentence_transformers import SentenceTransformer
 import chromadb
 import os
 import json
+from dotenv import load_dotenv
 
-from app.parser import extract_text
+from app.history import get_analysis_history
+from app.bug_parser import extract_text
 from app.agents.orchestrator import BugAnalysisOrchestrator
 
 app = FastAPI(title="AI Smart Bug Analyzer & Fix Advisor")
+load_dotenv()
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/history")
+def get_history():
+    history = get_analysis_history()
+
+    return {
+        "count": len(history),
+        "history": history
+    }
+@app.get("/history/{analysis_id}")
+def get_analysis(analysis_id: str):
+    file_path = Path("analysis") / f"{analysis_id}.json"
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Analysis not found"
+        )
+
+    with open(file_path, "r", encoding="utf-8") as file:
+        analysis = json.load(file)
+
+    return analysis
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -122,4 +160,21 @@ async def submit_bug(
         "submitted_bug": query,
         "analysis": analysis,
         "similar_bugs": similar_bugs
+    }
+from pathlib import Path
+
+@app.delete("/history/{analysis_id}")
+def delete_analysis(analysis_id: str):
+    file_path = Path("analysis") / f"{analysis_id}.json"
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Analysis not found"
+        )
+
+    file_path.unlink()
+
+    return {
+        "message": "Analysis deleted successfully"
     }

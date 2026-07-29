@@ -1,6 +1,7 @@
 from app.agents.triage_agent import TriageAgent
 from app.agents.log_analysis_agent import LogAnalysisAgent
 from app.agents.root_cause_agent import RootCauseAgent
+from app.agents.fix_agent import FixRecommendationAgent
 
 
 class BugAnalysisOrchestrator:
@@ -9,6 +10,7 @@ class BugAnalysisOrchestrator:
         self.triage_agent = TriageAgent()
         self.log_agent = LogAnalysisAgent()
         self.root_cause_agent = RootCauseAgent()
+        self.fix_agent = FixRecommendationAgent()
 
     def analyze_bug(self, bug_report):
 
@@ -24,8 +26,18 @@ class BugAnalysisOrchestrator:
             log_analysis
         )
 
+        # Agent 4 - AI Fix Recommendation
+        fix = self.fix_agent.analyze(
+            bug_text=bug_report,
+            root_cause=root_cause,
+            triage=triage,
+            log_analysis=log_analysis,
+            similar_bugs=[]
+        )
+
         return {
             "triage": triage,
             "log_analysis": log_analysis,
-            "root_cause": root_cause
+            "root_cause": root_cause,
+            "fix_recommendation": fix
         }

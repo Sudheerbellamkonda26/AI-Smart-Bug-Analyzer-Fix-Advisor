@@ -29,6 +29,4 @@ while True:
 
         metadata = results["metadatas"][0][i]
 
-       print(f"Severity    : {metadata.get('severity', 'N/A')}")
-       print(f"Component   : {metadata.get('component', 'N/A')}")
-       print(f"Solution    : {metadata.get('solution', 'No solution available')}")
+        print("Metadata:", metadata)
