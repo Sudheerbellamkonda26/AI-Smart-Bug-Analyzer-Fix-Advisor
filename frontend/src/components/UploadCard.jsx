@@ -75,6 +75,12 @@ const [showToast, setShowToast] = useState(false);
       });
       setShowToast(true);
 
+      console.log("RESULT STATE:");
+console.log({
+  ...response.data,
+  timestamp: new Date().toLocaleString(),
+});
+
       setTimeout(() => {
       setShowToast(false);
       }, 3000);
@@ -191,10 +197,10 @@ const [showToast, setShowToast] = useState(false);
       </button>
 
       {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <AnalysisResults result={result} />
-      )}
+  <LoadingSpinner />
+) : (
+  result && <AnalysisResults result={result} />
+)}
 
       <button
         onClick={handleReset}

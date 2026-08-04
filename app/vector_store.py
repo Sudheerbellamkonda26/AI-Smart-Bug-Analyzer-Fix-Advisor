@@ -53,6 +53,8 @@ for _, row in data.iterrows():
         documents=[document],
 
         metadatas=[{
+            
+            "title": row["title"],
 
             "solution": row["resolution"], 
 

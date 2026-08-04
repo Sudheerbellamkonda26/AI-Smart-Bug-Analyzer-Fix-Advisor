@@ -1,32 +1,27 @@
-import chromadb
-from sentence_transformers import SentenceTransformer
+results = collection.query(
+    query_embeddings=[query_embedding],
+    n_results=3,
+)
 
-# Load embedding model
-model = SentenceTransformer("all-MiniLM-L6-v2")
+similar_bugs = []
 
-# Connect to ChromaDB
-client = chromadb.PersistentClient(path="chroma_db")
-collection = client.get_collection("bug_reports")
-
-while True:
-    query = input("\nEnter Bug Description (or type exit): ")
-
-    if query.lower() == "exit":
-        break
-
-    query_embedding = model.encode(query).tolist()
-
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=3
-    )
-
-    print("\n===== Similar Bugs =====")
+if results["ids"] and len(results["ids"][0]) > 0:
 
     for i in range(len(results["ids"][0])):
-        print(f"\nBug ID      : {results['ids'][0][i]}")
-        print(f"Description : {results['documents'][0][i]}")
 
         metadata = results["metadatas"][0][i]
 
-        print("Metadata:", metadata)
+        distance = results["distances"][0][i]
+
+        similarity = max(0, round((1 - distance) * 100, 2))
+
+        similar_bugs.append({
+            "title": metadata.get("title", ""),
+            "description": metadata.get("description", ""),
+            "severity": metadata.get("severity", "Unknown"),
+            "component": metadata.get("component", "Unknown"),
+            "resolution": metadata.get("resolution", ""),
+            "similarity": similarity
+        })
+
+return similar_bugs

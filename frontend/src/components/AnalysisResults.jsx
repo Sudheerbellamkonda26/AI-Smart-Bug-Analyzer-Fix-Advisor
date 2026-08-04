@@ -1,17 +1,32 @@
-import { useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
-  Copy,
-  Check,
+  AlertTriangle,
+  Bug,
+  Cpu,
   Download,
   FileText,
+  ShieldAlert,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
-import {
-  generatePDF,
-  generateMarkdown,
-} from "../utils/reportGenerator";
+
 export default function AnalysisResults({ result }) {
-  const [copied, setCopied] = useState(false);
   if (!result) return null;
+
+  const {
+    submitted_bug,
+    analysis,
+    similar_bugs = [],
+  } = result;
+
+  const triage = analysis?.triage || {};
+  const logAnalysis = analysis?.log_analysis || {};
+  const rootCause = analysis?.root_cause || {};
+  const duplicateDetection =
+    analysis?.duplicate_detection || {};
+  const fixRecommendation =
+    analysis?.fix_recommendation || {};
 
   const severityColor = (severity) => {
     switch (severity?.toLowerCase()) {
@@ -27,387 +42,473 @@ export default function AnalysisResults({ result }) {
         return "bg-slate-600";
     }
   };
-  const copyCode = async () => {
-  const code = result.analysis?.fix_recommendation?.code_snippet;
 
-  if (!code) return;
+  const downloadReport = () => {
+  const doc = new jsPDF();
 
-  await navigator.clipboard.writeText(code);
+  doc.setFontSize(20);
+  doc.text("AI Smart Bug Analyzer Report", 15, 20);
 
-  setCopied(true);
+  doc.setFontSize(12);
+  doc.text(`Severity: ${triage.severity || "-"}`, 15, 35);
+  doc.text(`Priority: ${triage.priority || "-"}`, 15, 45);
+  doc.text(`Component: ${triage.component || "-"}`, 15, 55);
 
-  setTimeout(() => {
-    setCopied(false);
-  }, 2000);
+  autoTable(doc, {
+    startY: 70,
+    head: [["Section", "Details"]],
+    body: [
+      ["Submitted Bug", submitted_bug || "-"],
+      ["Exception", logAnalysis.exception_type || "-"],
+      ["Failure Point", logAnalysis.failure_point || "-"],
+      ["Root Cause", rootCause.root_cause || "-"],
+      [
+        "Recommendation",
+        fixRecommendation.recommendation || "-"
+      ],
+    ],
+  });
+
+  doc.save("Bug_Report.pdf");
 };
   return (
-    <div className="mt-10 space-y-6">
+    <div className="space-y-8 mt-10">
 
-      {/* Header */}
-      {/* Header */}
+      {/* ================= HEADER ================= */}
 
-<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
 
-  <div>
-    <h1 className="text-3xl font-bold text-white">
-      📊 Analysis Report
-    </h1>
+        <div>
 
-    {result.timestamp && (
-      <p className="text-slate-400 text-sm mt-2">
-        🕒 {result.timestamp}
-      </p>
-    )}
-  </div>
+          <h1 className="text-4xl font-extrabold text-white flex items-center gap-3">
 
-  <div className="flex gap-3">
+            <Sparkles
+              size={34}
+              className="text-cyan-400"
+            />
 
-    <button
-      onClick={() => generatePDF(result)}
-      className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-5 py-3 rounded-xl text-white font-semibold transition"
-    >
-      <Download size={18} />
-      PDF Report
-    </button>
-     
-     <button
-  onClick={() => generateMarkdown(result)}
-  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-5 py-3 rounded-xl text-white font-semibold transition"
->
-  <FileText size={18} />
-  Markdown Report
-</button>
+            Analysis Report
 
-  </div>
+          </h1>
 
-</div>
-
-      {/* ====================== TRIAGE ====================== */}
-
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
-
-        <h2 className="text-2xl font-bold text-blue-400 mb-6">
-          🩺 Triage Analysis
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Severity</p>
-
-            <span
-              className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white ${severityColor(
-                result.analysis?.triage?.severity
-              )}`}
-            >
-              {result.analysis?.triage?.severity || "N/A"}
-            </span>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Priority</p>
-            <p className="text-lg font-semibold">
-              {result.analysis?.triage?.priority || "N/A"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Component</p>
-            <p className="text-lg font-semibold">
-              {result.analysis?.triage?.component || "N/A"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Confidence</p>
-            <p className="text-lg font-semibold">
-              {result.analysis?.triage?.confidence || "N/A"}
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ====================== LOG ANALYSIS ====================== */}
-
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
-
-        <h2 className="text-2xl font-bold text-green-400 mb-6">
-          📋 Log Analysis
-        </h2>
-
-        <div className="space-y-4">
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Exception Type</p>
-
-            <p className="text-white font-semibold">
-              {result.analysis?.log_analysis?.exception_type || "N/A"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Failure Point</p>
-
-            <p className="text-white">
-              {result.analysis?.log_analysis?.failure_point || "N/A"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-400">Code Path</p>
-
-            <p className="text-white break-all">
-              {result.analysis?.log_analysis?.code_path || "N/A"}
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ====================== ROOT CAUSE ====================== */}
-
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
-
-        <h2 className="text-2xl font-bold text-red-400 mb-6">
-          🧠 Root Cause
-        </h2>
-
-        <div className="bg-slate-800 rounded-lg p-5">
-
-          <p className="text-slate-300 leading-8">
-            {result.analysis?.root_cause?.root_cause || "N/A"}
+          <p className="text-slate-400 mt-3 text-lg">
+            AI Generated Bug Investigation
           </p>
 
-          <div className="mt-5">
+        </div>
 
-            <span className="bg-blue-600 px-3 py-1 rounded-full text-white text-sm">
-              Confidence:{" "}
-              {result.analysis?.root_cause?.confidence || "N/A"}
+        <button
+          onClick={downloadReport}
+          className="flex items-center gap-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-105 transition-all duration-300 text-white px-6 py-3 rounded-xl font-semibold shadow-lg"
+        >
+
+          <Download size={20} />
+
+          Download Report
+
+        </button>
+
+      </div>
+
+      {/* ================= SUBMITTED BUG ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-5">
+
+          <FileText
+            size={30}
+            className="text-cyan-400"
+          />
+
+          Submitted Bug
+
+        </h2>
+
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
+
+          <p className="text-slate-300 whitespace-pre-wrap leading-8">
+
+            {submitted_bug}
+
+          </p>
+
+        </div>
+
+      </div>
+            {/* ================= TRIAGE ANALYSIS ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-cyan-500 transition-all duration-300">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
+
+          <ShieldAlert
+            size={30}
+            className="text-orange-400"
+          />
+
+          Triage Analysis
+
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-8">
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Severity
+            </p>
+
+            <span
+              className={`inline-block px-5 py-2 rounded-full font-semibold text-white ${severityColor(
+                triage.severity
+              )}`}
+            >
+              {triage.severity || "Unknown"}
             </span>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Priority
+            </p>
+
+            <p className="text-2xl font-bold text-white">
+
+              {triage.priority || "N/A"}
+
+            </p>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Component
+            </p>
+
+            <p className="text-xl text-white">
+
+              {triage.component || "Unknown"}
+
+            </p>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Confidence
+            </p>
+
+            <p className="text-cyan-400 text-xl font-bold">
+
+              {((triage.confidence || 0) * 100).toFixed(1)}%
+
+            </p>
 
           </div>
 
         </div>
 
-      </div> 
-      {/* ====================== FIX RECOMMENDATION ====================== */}
-<div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
+        <div className="mt-8">
 
-  <h2 className="text-2xl font-bold text-cyan-400 mb-6">
-    🛠 AI Fix Recommendation
-  </h2>
+          <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+            Reasoning
+          </p>
 
-  <div className="space-y-6">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
 
-    {/* Summary */}
+            <p className="text-slate-300 leading-8">
 
-    <div className="bg-slate-800 rounded-lg p-4">
+              {triage.reasoning || "No reasoning available."}
 
-      <h3 className="text-slate-400 font-semibold">
-        Summary
-      </h3>
+            </p>
 
-      <p className="text-white mt-2 leading-7">
-        {result.analysis?.fix_recommendation?.summary}
-      </p>
+          </div>
 
-    </div>
+        </div>
 
-    {/* Recommended Fix */}
+      </div>
+            {/* ================= LOG ANALYSIS ================= */}
 
-    <div className="bg-slate-800 rounded-lg p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-cyan-500 transition-all duration-300">
 
-      <h3 className="text-slate-400 font-semibold">
-        Recommended Fix
-      </h3>
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
 
-      <p className="text-white mt-2 leading-7">
-        {result.analysis?.fix_recommendation?.recommended_fix}
-      </p>
+          <Cpu
+            size={30}
+            className="text-blue-400"
+          />
 
-    </div>
+          Log Analysis
 
-    {/* Confidence */}
-
-    <div>
-
-      <span className="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
-        Confidence :
-        {" "}
-      {(
-        (result.analysis?.fix_recommendation?.confidence ?? 0) * 100
-      ).toFixed(0)}
-        %
-      </span>
-
-    </div>
-
-    {/* Steps */}
-
-    <div>
-
-      <h3 className="text-slate-300 font-semibold mb-3">
-        Recommended Steps
-      </h3>
-
-      <ul className="space-y-2">
-
-        {result.analysis?.fix_recommendation?.steps?.map(
-          (step, index) => (
-            <li
-              key={index}
-              className="bg-slate-800 rounded-lg p-3 text-white"
-            >
-              ✅ {step}
-            </li>
-          )
-        )}
-
-      </ul>
-
-    </div>
-
-    {/* Code */}
-
-    <div>
-
-      <div>
-
-  <div className="flex justify-between items-center mb-3">
-
-    <h3 className="text-slate-300 font-semibold">
-      Suggested Code
-    </h3>
-
-    <button
-      onClick={copyCode}
-      className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm text-white transition"
-    >
-      {copied ? (
-        <>
-          <Check size={16} className="text-green-400" />
-          Copied!
-        </>
-      ) : (
-        <>
-          <Copy size={16} />
-          Copy Code
-        </>
-      )}
-    </button>
-
-  </div>
-
-  <pre className="bg-gray-950 text-green-400 rounded-xl p-5 overflow-x-auto border border-slate-700 font-mono text-sm">
-
-    <code>
-      {result.analysis?.fix_recommendation?.code_snippet}
-    </code>
-
-  </pre>
-
-</div>
-
-    </div>
-
-    {/* Best Practice */}
-
-    <div className="bg-blue-950 border border-blue-700 rounded-lg p-4">
-
-      <h3 className="text-blue-300 font-semibold">
-        💡 Best Practice
-      </h3>
-
-      <p className="text-slate-200 mt-2">
-        {result.analysis?.fix_recommendation?.best_practice}
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
-
-{/* ====================== SIMILAR BUGS ====================== */}
-
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
-
-        <h2 className="text-2xl font-bold text-yellow-400 mb-6">
-          📚 Similar Bugs ({result.similar_bugs?.length || 0})
         </h2>
 
-        {result.similar_bugs?.length > 0 ? (
+        <div className="grid md:grid-cols-2 gap-8">
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Exception Type
+            </p>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+
+              <p className="text-white text-lg">
+
+                {logAnalysis.exception_type || "Not Available"}
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Failure Point
+            </p>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+
+              <p className="text-white text-lg">
+
+                {logAnalysis.failure_point || "Not Available"}
+
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="mt-8">
+
+          <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+            Stack Trace Summary
+          </p>
+
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
+
+            <p className="text-slate-300 leading-8">
+
+              {logAnalysis.summary || "No summary available."}
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ================= ROOT CAUSE ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-red-500 transition-all duration-300">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
+
+          <Bug
+            size={30}
+            className="text-red-400"
+          />
+
+          Root Cause Analysis
+
+        </h2>
+
+        <div className="space-y-6">
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              Root Cause
+            </p>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
+
+              <p className="text-slate-300 leading-8">
+
+                {rootCause.root_cause || "No root cause identified."}
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              Confidence Score
+            </p>
+
+            <div className="flex items-center gap-4">
+
+              <span className="bg-red-600 text-white px-5 py-2 rounded-full font-semibold">
+
+                {((rootCause.confidence || 0) * 100).toFixed(1)}%
+
+              </span>
+
+              <div className="flex-1 h-3 bg-slate-700 rounded-full">
+
+                <div
+                  className="h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500"
+                  style={{
+                    width: `${(rootCause.confidence || 0) * 100}%`,
+                  }}
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+            {/* ================= SIMILAR HISTORICAL BUGS ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-cyan-500 transition-all duration-300">
+
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+
+          <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+
+            <AlertTriangle
+              size={30}
+              className="text-yellow-400"
+            />
+
+            Similar Historical Bugs
+
+          </h2>
+
+          <span className="bg-cyan-600 text-white px-4 py-2 rounded-full font-semibold">
+
+            {similar_bugs.length} Found
+
+          </span>
+
+        </div>
+
+        {similar_bugs.length > 0 ? (
 
           <div className="space-y-6">
 
-            {result.similar_bugs.map((bug, index) => (
+            {similar_bugs.map((bug, index) => (
 
               <div
                 key={index}
-                className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-blue-500 hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
+                className="bg-slate-800 border border-slate-700 rounded-2xl p-6 hover:border-cyan-500 transition-all duration-300"
               >
 
-                {/* Top Row */}
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
 
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                  <div>
 
-                  <h3 className="text-xl font-bold text-white">
-                    🐞 {bug.bug_id}
-                  </h3>
+                    <h3 className="text-2xl font-bold text-cyan-400">
 
-                  <span className="bg-blue-600 px-4 py-1 rounded-full text-white text-sm font-semibold">
+                      {bug.title}
 
-                    {((bug.similarity_score ?? 0) * 100).toFixed(1)}% Match
+                    </h3>
+
+                    <p className="text-slate-400 mt-1">
+
+                      Historical Bug #{bug.bug_id}
+
+                    </p>
+
+                  </div>
+
+                  <span className="bg-cyan-600 text-white px-5 py-2 rounded-full font-semibold">
+
+                    {bug.similarity}%
 
                   </span>
 
                 </div>
-
-                {/* Badges */}
-
-                <div className="mt-5 flex flex-wrap gap-3">
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${severityColor(
-                      bug.severity
-                    )}`}
-                  >
-                    {bug.severity}
-                  </span>
-
-                  <span className="bg-green-700 px-3 py-1 rounded-full text-sm text-white">
-                    {bug.component}
-                  </span>
-
-                </div>
-
-                {/* Description */}
 
                 <div className="mt-6">
 
-                  <h4 className="font-semibold text-slate-300">
+                  <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
                     Description
-                  </h4>
+                  </p>
 
-                  <p className="text-slate-400 mt-2 leading-7">
-                    {bug.description || "No description available."}
+                  <p className="text-slate-300 leading-8">
+
+                    {bug.description}
+
                   </p>
 
                 </div>
 
-                {/* Solution */}
+                <div className="flex flex-wrap gap-3 mt-6">
 
-                <div className="mt-6">
+                  <span className="bg-red-600 text-white px-4 py-2 rounded-full">
 
-                  <h4 className="font-semibold text-blue-300">
-                    💡 Suggested Solution
+                    {bug.severity}
+
+                  </span>
+
+                  <span className="bg-blue-600 text-white px-4 py-2 rounded-full">
+
+                    {bug.component}
+
+                  </span>
+
+                </div>
+
+                <div className="mt-8">
+
+                  <div className="flex justify-between mb-2">
+
+                    <span className="text-slate-400">
+
+                      Similarity Score
+
+                    </span>
+
+                    <span className="text-white font-semibold">
+
+                      {bug.similarity}%
+
+                    </span>
+
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-700 rounded-full">
+
+                    <div
+                      className="h-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                      style={{
+                        width: `${bug.similarity}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+                <div className="mt-8 bg-slate-950 border border-slate-700 rounded-xl p-5">
+
+                  <h4 className="text-green-400 font-bold text-lg mb-3">
+
+                    Previous Resolution
+
                   </h4>
 
-                  <p className="text-white mt-2 leading-7">
-                    {bug.solution || "No solution available."}
+                  <p className="text-slate-300 leading-8">
+
+                    {bug.resolution}
+
                   </p>
 
                 </div>
@@ -420,15 +521,243 @@ export default function AnalysisResults({ result }) {
 
         ) : (
 
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
+          <div className="bg-slate-950 border border-slate-700 rounded-xl p-10 text-center">
 
-            <p className="text-slate-400 text-lg">
-              🔍 No similar bugs were found in the knowledge base.
+            <AlertTriangle
+              size={48}
+              className="mx-auto text-yellow-400 mb-4"
+            />
+
+            <h3 className="text-2xl font-bold text-white">
+
+              No Similar Bugs Found
+
+            </h3>
+
+            <p className="text-slate-400 mt-3">
+
+              No matching historical defects were found in the knowledge base.
+
             </p>
 
           </div>
 
         )}
+
+      </div>
+            {/* ================= DUPLICATE DETECTION ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-cyan-500 transition-all duration-300">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
+
+          <Bug
+            size={30}
+            className="text-cyan-400"
+          />
+
+          Duplicate Detection
+
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-8">
+
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6">
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Duplicate Count
+            </p>
+
+            <p className="text-4xl font-bold text-cyan-400">
+
+              {duplicateDetection.duplicate_count || 0}
+
+            </p>
+
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6">
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-2">
+              Status
+            </p>
+
+            <p className="text-green-400 text-xl font-bold">
+
+              Analysis Complete
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ================= AI FIX RECOMMENDATION ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-green-500 transition-all duration-300">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
+
+          <Wrench
+            size={30}
+            className="text-green-400"
+          />
+
+          AI Fix Recommendation
+
+        </h2>
+
+        <div className="space-y-8">
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              Recommendation
+            </p>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
+
+              <p className="text-slate-300 leading-8">
+
+                {fixRecommendation.recommendation ||
+                  "No recommendation available."}
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <div>
+
+            <div className="flex justify-between mb-3">
+
+              <span className="text-slate-400">
+                AI Confidence
+              </span>
+
+              <span className="text-cyan-400 font-bold">
+
+                {fixRecommendation.confidence || 0}%
+
+              </span>
+
+            </div>
+
+            <div className="w-full h-4 bg-slate-700 rounded-full">
+
+              <div
+                className="h-4 rounded-full bg-gradient-to-r from-green-500 to-cyan-500"
+                style={{
+                  width: `${fixRecommendation.confidence || 0}%`,
+                }}
+              />
+
+            </div>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              Suggested Code Changes
+            </p>
+
+            <pre className="bg-slate-950 border border-slate-800 rounded-xl p-5 overflow-x-auto whitespace-pre-wrap text-green-300 text-sm leading-7">
+
+{fixRecommendation.code_changes ||
+"No code changes suggested."}
+
+            </pre>
+
+          </div>
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              Best Practices
+            </p>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
+
+              {Array.isArray(fixRecommendation.best_practices) &&
+              fixRecommendation.best_practices.length > 0 ? (
+
+                <ul className="list-disc list-inside space-y-3 text-slate-300">
+
+                  {fixRecommendation.best_practices.map((item, index) => (
+
+                    <li key={index}>{item}</li>
+
+                  ))}
+
+                </ul>
+
+              ) : (
+
+                <p className="text-slate-400">
+
+                  No best practices available.
+
+                </p>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ================= FOOTER ================= */}
+
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 rounded-2xl p-8 text-center shadow-lg">
+
+        <Sparkles
+          size={42}
+          className="mx-auto text-cyan-400 mb-4"
+        />
+
+        <h2 className="text-3xl font-bold text-white">
+
+          Analysis Completed Successfully
+
+        </h2>
+
+        <p className="text-slate-400 mt-3 text-lg max-w-3xl mx-auto">
+
+          This report was generated using the
+          <span className="text-cyan-400 font-semibold">
+            {" "}AI Smart Bug Analyzer & Fix Advisor{" "}
+          </span>
+          powered by Multi-Agent AI, Retrieval-Augmented Generation (RAG),
+          Semantic Search, and Historical Bug Analysis.
+
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-4 mt-8">
+
+          <span className="bg-cyan-600 text-white px-5 py-2 rounded-full font-semibold">
+            AI Powered
+          </span>
+
+          <span className="bg-green-600 text-white px-5 py-2 rounded-full font-semibold">
+            Multi-Agent
+          </span>
+
+          <span className="bg-purple-600 text-white px-5 py-2 rounded-full font-semibold">
+            RAG Enabled
+          </span>
+
+          <span className="bg-orange-600 text-white px-5 py-2 rounded-full font-semibold">
+            Semantic Search
+          </span>
+
+        </div>
 
       </div>
 

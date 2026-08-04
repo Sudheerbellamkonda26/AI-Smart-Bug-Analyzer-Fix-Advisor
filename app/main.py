@@ -1,20 +1,28 @@
 from datetime import datetime
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from sentence_transformers import SentenceTransformer
-import chromadb
-import os
+from pathlib import Path
 import json
+import os
+
+import chromadb
 from dotenv import load_dotenv
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sentence_transformers import SentenceTransformer
 
 from app.history import get_analysis_history
 from app.bug_parser import extract_text
 from app.agents.orchestrator import BugAnalysisOrchestrator
 
+# ==============================
+# FastAPI App
+# ==============================
+
 app = FastAPI(title="AI Smart Bug Analyzer & Fix Advisor")
+
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,6 +34,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==============================
+# Configuration
+# ==============================
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+ANALYSIS_FOLDER = "analysis"
+os.makedirs(ANALYSIS_FOLDER, exist_ok=True)
+
+MAX_FILE_SIZE = 200 * 1024 * 1024
+ALLOWED_EXTENSIONS = {".txt", ".log", ".pdf"}
+
+# ==============================
+# Load AI Model
+# ==============================
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+# ==============================
+# ChromaDB
+# ==============================
+
+client = chromadb.PersistentClient(path="chroma_db")
+
+collection = client.get_or_create_collection(
+    name="bug_reports"
+)
+
+# ==============================
+# Multi-Agent
+# ==============================
+
+orchestrator = BugAnalysisOrchestrator()
+
+# ==============================
+# Routes
+# ==============================
+
+@app.get("/")
+def home():
+    return {
+        "message": "AI Smart Bug Analyzer & Fix Advisor is Running 🚀"
+    }
+
+
 @app.get("/history")
 def get_history():
     history = get_analysis_history()
@@ -34,9 +88,12 @@ def get_history():
         "count": len(history),
         "history": history
     }
+
+
 @app.get("/history/{analysis_id}")
 def get_analysis(analysis_id: str):
-    file_path = Path("analysis") / f"{analysis_id}.json"
+
+    file_path = Path(ANALYSIS_FOLDER) / f"{analysis_id}.json"
 
     if not file_path.exists():
         raise HTTPException(
@@ -48,28 +105,6 @@ def get_analysis(analysis_id: str):
         analysis = json.load(file)
 
     return analysis
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-MAX_FILE_SIZE = 200 * 1024 * 1024  # 200 MB
-ALLOWED_EXTENSIONS = {".txt", ".log", ".pdf"}
-
-# Load AI model
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Connect to ChromaDB
-client = chromadb.PersistentClient(path="chroma_db")
-collection = client.get_collection("bug_reports")
-
-# Initialize Multi-Agent Orchestrator
-orchestrator = BugAnalysisOrchestrator()
-
-
-@app.get("/")
-def home():
-    return {
-        "message": "AI Smart Bug Analyzer & Fix Advisor is Running 🚀"
-    }
 
 
 @app.post("/submit")
@@ -80,7 +115,10 @@ async def submit_bug(
 
     extracted_text = ""
 
-    # Handle uploaded file
+    # ==============================
+    # File Upload
+    # ==============================
+
     if file:
 
         extension = os.path.splitext(file.filename)[1].lower()
@@ -99,14 +137,16 @@ async def submit_bug(
                 detail="File size exceeds 200 MB."
             )
 
-        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file_path = os.path.join(
+            UPLOAD_FOLDER,
+            file.filename
+        )
 
         with open(file_path, "wb") as buffer:
             buffer.write(content)
 
         extracted_text = extract_text(file_path)
 
-    # Use either pasted text or extracted file text
     query = bug_text if bug_text else extracted_text
 
     if not query.strip():
@@ -115,57 +155,100 @@ async def submit_bug(
             detail="Please provide bug text or upload a valid file."
         )
 
-    # ============================
-    # Run Multi-Agent Analysis
-    # ============================
+    # ==============================
+    # Multi-Agent Analysis
+    # ==============================
+
     analysis = orchestrator.analyze_bug(query)
 
-    # ============================
-    # Save Analysis History
-    # ============================
-    os.makedirs("analysis", exist_ok=True)
+    # ==============================
+    # Save Analysis
+    # ==============================
 
-    filename = datetime.now().strftime("%Y%m%d_%H%M%S.json")
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    with open(os.path.join("analysis", filename), "w") as f:
-        json.dump(analysis, f, indent=4)
+    with open(
+        os.path.join(
+            ANALYSIS_FOLDER,
+            f"{filename}.json"
+        ),
+        "w",
+        encoding="utf-8"
+    ) as f:
+        json.dump(
+            analysis,
+            f,
+            indent=4,
+            ensure_ascii=False
+        )
 
-    # ============================
-    # Similarity Search (Milestone 1)
-    # ============================
+    # ==============================
+    # Similarity Search
+    # ==============================
+
     query_embedding = model.encode(query).tolist()
 
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=3,
-        include=["documents", "metadatas", "distances"]
+        include=[
+            "documents",
+            "metadatas",
+            "distances"
+        ]
     )
 
     similar_bugs = []
 
-    for i in range(len(results["ids"][0])):
+    if results["ids"] and len(results["ids"][0]) > 0:
 
-        metadata = results["metadatas"][0][i]
+        for i in range(len(results["ids"][0])):
 
-        similar_bugs.append({
-            "bug_id": results["ids"][0][i],
-            "description": results["documents"][0][i],
-            "severity": metadata.get("severity"),
-            "component": metadata.get("component"),
-            "solution": metadata.get("solution"),
-            "similarity_score": round(1 - results["distances"][0][i], 4)
-        })
+            metadata = results["metadatas"][0][i] or {}
+
+            distance = results["distances"][0][i]
+
+            similarity = max(
+                0,
+                round((1 - distance) * 100, 2)
+            )
+
+            similar_bugs.append({
+                "bug_id": results["ids"][0][i],
+                "title": metadata.get(
+                    "title",
+                    "Unknown Bug"
+                ),
+                "description": results["documents"][0][i],
+                "severity": metadata.get(
+                    "severity",
+                    "Unknown"
+                ),
+                "component": metadata.get(
+                    "component",
+                    "Unknown"
+                ),
+                "resolution": metadata.get(
+                    "resolution",
+                    metadata.get(
+                        "solution",
+                        "No resolution available"
+                    )
+                ),
+                "similarity": similarity
+            })
 
     return {
         "submitted_bug": query,
         "analysis": analysis,
         "similar_bugs": similar_bugs
     }
-from pathlib import Path
+
 
 @app.delete("/history/{analysis_id}")
 def delete_analysis(analysis_id: str):
-    file_path = Path("analysis") / f"{analysis_id}.json"
+
+    file_path = Path(ANALYSIS_FOLDER) / f"{analysis_id}.json"
 
     if not file_path.exists():
         raise HTTPException(

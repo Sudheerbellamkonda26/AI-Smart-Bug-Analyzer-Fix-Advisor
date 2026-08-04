@@ -1,9 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AnalysisDetails from "./pages/AnalysisDetails";
-
-import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
+import AnalysisDetails from "./pages/AnalysisDetails";
 
 export default function App() {
   return (
