@@ -7,7 +7,7 @@ export default function Footer() {
         <div>
 
           <h2 className="text-white font-semibold">
-            AI Smart Bug Analyzer & Fix Advisor
+            Creation of Intelligent Bug Diagnosis Platform
           </h2>
 
           <p className="text-slate-400 text-sm mt-1">

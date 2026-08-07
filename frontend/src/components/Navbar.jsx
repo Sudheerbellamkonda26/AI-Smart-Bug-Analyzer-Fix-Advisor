@@ -4,7 +4,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between">
 
         <h1 className="text-white font-bold">
-          AI Smart Bug Analyzer
+          Bug Diagnosis Platform
         </h1>
 
         <div className="flex gap-6">

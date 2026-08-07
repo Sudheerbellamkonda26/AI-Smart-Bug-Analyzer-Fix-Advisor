@@ -177,7 +177,7 @@ const todayCount = history.filter(
         <div className="mb-8 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl p-6 text-white">
 
           <h2 className="text-3xl font-bold">
-            AI Smart Bug Analyzer
+            Creation of Intelligent Bug Diagnosis Platform
           </h2>
 
           <p className="mt-2 opacity-90">
@@ -457,7 +457,7 @@ const todayCount = history.filter(
                 {/* Footer */}
 
         <div className="mt-10 text-center text-slate-500 text-sm">
-          AI Smart Bug Analyzer & Fix Advisor • Multi-Agent AI Platform • Infosys Springboard Internship
+          Creation of Intelligent Bug Diagnosis Platform with Fix Recommendation Assistance• Multi-Agent AI Platform • Infosys Springboard Internship
         </div>
 
         <Footer />

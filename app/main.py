@@ -17,7 +17,17 @@ from app.agents.orchestrator import BugAnalysisOrchestrator
 # FastAPI App
 # ==============================
 
-app = FastAPI(title="AI Smart Bug Analyzer & Fix Advisor")
+app = FastAPI(
+    title="Creation of Intelligent Bug Diagnosis Platform with Fix Recommendation Assistance",
+    description="""
+An AI-powered bug diagnosis platform that leverages Multi-Agent AI,
+Retrieval-Augmented Generation (RAG), ChromaDB, Semantic Search,
+and Gemini AI to analyze software bugs, identify root causes,
+retrieve similar historical defects, and generate intelligent
+fix recommendations.
+""",
+    version="1.0.0",
+)
 
 load_dotenv()
 

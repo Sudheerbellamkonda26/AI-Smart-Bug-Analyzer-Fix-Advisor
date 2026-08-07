@@ -92,7 +92,7 @@ export default function AnalysisResults({ result }) {
           </h1>
 
           <p className="text-slate-400 mt-3 text-lg">
-            AI Generated Bug Investigation
+            AI Generated Bug Diagnosis Report
           </p>
 
         </div>
