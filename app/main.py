@@ -6,6 +6,7 @@ import os
 import chromadb
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
@@ -81,6 +82,18 @@ collection = client.get_or_create_collection(
 orchestrator = BugAnalysisOrchestrator()
 
 # ==============================
+# Knowledge Base Growth
+# ==============================
+
+class ResolvedBugRequest(BaseModel):
+    bug_id: str
+    title: str
+    description: str
+    resolution: str
+    severity: str
+    component: str
+
+# ==============================
 # Routes
 # ==============================
 
@@ -104,6 +117,29 @@ def get_history():
 def analytics():
 
     return get_dashboard_analytics()
+
+@app.post("/knowledge-base/add")
+def add_resolved_bug(request: ResolvedBugRequest):
+
+    try:
+        rag_service = orchestrator.rag
+
+        result = rag_service.add_resolved_bug(
+            bug_id=request.bug_id,
+            title=request.title,
+            description=request.description,
+            resolution=request.resolution,
+            severity=request.severity,
+            component=request.component,
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add bug to knowledge base: {str(e)}"
+        )
 
 
 @app.get("/history/{analysis_id}")

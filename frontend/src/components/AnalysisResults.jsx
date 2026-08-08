@@ -1,3 +1,4 @@
+import { useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -12,9 +13,74 @@ import {
 } from "lucide-react";
 
 export default function AnalysisResults({ result }) {
+  const [resolvedStatus, setResolvedStatus] =
+    useState("idle");
+
   if (!result) return null;
 
-  const {
+    const saveResolvedBug = async () => {
+    try {
+      setResolvedStatus("saving");
+
+      const triage = result.analysis?.triage || {};
+      const rootCause = result.analysis?.root_cause || {};
+      const fix = result.analysis?.fix_recommendation || {};
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/knowledge-base/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            bug_id: `verified_${Date.now()}`,
+
+            title:
+              triage.component
+                ? `${triage.component} Resolved Bug`
+                : "Verified Resolved Bug",
+
+            description:
+              result.submitted_bug || "",
+
+            resolution:
+              fix.recommended_fix ||
+              fix.summary ||
+              rootCause.hypothesis ||
+              "Verified fix applied.",
+
+            severity:
+              triage.severity || "Unknown",
+
+            component:
+              triage.component || "General",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to add bug to knowledge base."
+        );
+      }
+
+      await response.json();
+
+      setResolvedStatus("success");
+
+    } catch (error) {
+      console.error(
+        "Knowledge base error:",
+        error
+      );
+
+      setResolvedStatus("error");
+    }
+  };
+
+  
+    const {
     submitted_bug,
     analysis,
     similar_bugs = [],
@@ -621,8 +687,9 @@ export default function AnalysisResults({ result }) {
 
               <p className="text-slate-300 leading-8">
 
-                {fixRecommendation.recommendation ||
-                  "No recommendation available."}
+       {fixRecommendation.recommended_fix ||
+  fixRecommendation.summary ||
+  "No recommendation available."}
 
               </p>
 
@@ -640,7 +707,9 @@ export default function AnalysisResults({ result }) {
 
               <span className="text-cyan-400 font-bold">
 
-                {fixRecommendation.confidence || 0}%
+                {Math.round(
+  (fixRecommendation.confidence || 0) * 100
+)}%
 
               </span>
 
@@ -650,9 +719,11 @@ export default function AnalysisResults({ result }) {
 
               <div
                 className="h-4 rounded-full bg-gradient-to-r from-green-500 to-cyan-500"
-                style={{
-                  width: `${fixRecommendation.confidence || 0}%`,
-                }}
+            style={{
+  width: `${Math.round(
+    (fixRecommendation.confidence || 0) * 100
+  )}%`,
+}}
               />
 
             </div>
@@ -667,8 +738,8 @@ export default function AnalysisResults({ result }) {
 
             <pre className="bg-slate-950 border border-slate-800 rounded-xl p-5 overflow-x-auto whitespace-pre-wrap text-green-300 text-sm leading-7">
 
-{fixRecommendation.code_changes ||
-"No code changes suggested."}
+            {fixRecommendation.code_snippet ||
+             "No code changes suggested."}
 
             </pre>
 
@@ -682,35 +753,92 @@ export default function AnalysisResults({ result }) {
 
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-5">
 
-              {Array.isArray(fixRecommendation.best_practices) &&
-              fixRecommendation.best_practices.length > 0 ? (
+              {fixRecommendation.best_practice ? (
 
-                <ul className="list-disc list-inside space-y-3 text-slate-300">
+  <p className="text-slate-300 leading-7">
+    {fixRecommendation.best_practice}
+  </p>
 
-                  {fixRecommendation.best_practices.map((item, index) => (
+) : (
 
-                    <li key={index}>{item}</li>
+  <p className="text-slate-400">
+    No best practices available.
+  </p>
 
-                  ))}
-
-                </ul>
-
-              ) : (
-
-                <p className="text-slate-400">
-
-                  No best practices available.
-
-                </p>
-
-              )}
+)}
 
             </div>
 
           </div>
 
         </div>
+             {/* ================================
+          KNOWLEDGE BASE VERIFICATION
+      ================================= */}
 
+      <div className="mt-6 pt-6 border-t border-slate-700">
+
+        <h3 className="text-lg font-semibold text-white mb-2">
+          Knowledge Base Verification
+        </h3>
+
+        <p className="text-slate-400 text-sm mb-4">
+          If this fix has been tested and confirmed,
+          add the resolved bug to the knowledge base
+          for future recommendations.
+        </p>
+
+        {resolvedStatus === "idle" && (
+          <button
+            onClick={saveResolvedBug}
+            className="px-5 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+          >
+            ✓ Mark as Resolved & Add to Knowledge Base
+          </button>
+        )}
+
+        {resolvedStatus === "saving" && (
+          <button
+            disabled
+            className="px-5 py-3 rounded-lg bg-slate-600 text-white font-semibold cursor-not-allowed"
+          >
+            Saving to Knowledge Base...
+          </button>
+        )}
+
+        {resolvedStatus === "success" && (
+          <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+
+            <p className="text-green-400 font-semibold">
+              ✓ Bug verified and added to the knowledge base.
+            </p>
+
+            <p className="text-green-300 text-sm mt-1">
+              This resolved bug can now be used by the RAG system
+              for future recommendations.
+            </p>
+
+          </div>
+        )}
+
+        {resolvedStatus === "error" && (
+          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+
+            <p className="text-red-400 font-semibold">
+              ✕ Failed to add the bug to the knowledge base.
+            </p>
+
+            <button
+              onClick={saveResolvedBug}
+              className="mt-3 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold"
+            >
+              Try Again
+            </button>
+
+          </div>
+        )}
+
+      </div>
       </div>
 
       {/* ================= FOOTER ================= */}
