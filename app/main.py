@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
 from app.history import get_analysis_history
+from app.analytics import get_dashboard_analytics
 from app.bug_parser import extract_text
 from app.agents.orchestrator import BugAnalysisOrchestrator
 
@@ -98,6 +99,11 @@ def get_history():
         "count": len(history),
         "history": history
     }
+    
+@app.get("/analytics")
+def analytics():
+
+    return get_dashboard_analytics()
 
 
 @app.get("/history/{analysis_id}")

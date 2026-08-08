@@ -15,6 +15,7 @@ import DashboardCharts from "../components/DashboardCharts";
 
 export default function Dashboard() {
   const [history, setHistory] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,28 +23,39 @@ export default function Dashboard() {
   // LOAD DASHBOARD
   // =========================
 
-  const fetchHistory = async () => {
-    try {
-      setLoading(true);
-      setError("");
+const fetchDashboardData = async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-      const response = await API.get("/history");
+    const [historyResponse, analyticsResponse] =
+      await Promise.all([
+        API.get("/history"),
+        API.get("/analytics"),
+      ]);
 
-      setHistory(response.data.history || []);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to load dashboard.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setHistory(
+      historyResponse.data.history || []
+    );
+
+    setAnalytics(
+      analyticsResponse.data || null
+    );
+
+  } catch (err) {
+    console.error(err);
+    setError("Unable to load dashboard.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    fetchHistory();
+    fetchDashboardData();
   }, []);
 
   const refreshDashboard = () => {
-    fetchHistory();
+    fetchDashboardData();
   };
 
   // =========================
@@ -56,42 +68,59 @@ const todayCount = history.filter(
     item.timestamp &&
     new Date(item.timestamp).toLocaleDateString() === today
 ).length;
-  const stats = useMemo(() => {
-    const severityCounts = {
-      critical: 0,
-      high: 0,
-      medium: 0,
-      low: 0,
-      unknown: 0,
-    };
+const stats = useMemo(() => {
+  const severityDistribution =
+    analytics?.severity_distribution || {};
 
-    const components = {};
+  const components =
+    analytics?.component_distribution || {};
 
-    history.forEach((item) => {
-      const severity =
-        item.severity?.toLowerCase() || "unknown";
+  const severityCounts = {
+    critical:
+      severityDistribution.Critical || 0,
 
-      if (severityCounts[severity] !== undefined) {
-        severityCounts[severity]++;
-      } else {
-        severityCounts.unknown++;
-      }
+    high:
+      severityDistribution.High || 0,
 
-      const component =
-        item.component || "Unknown";
+    medium:
+      severityDistribution.Medium || 0,
 
-      components[component] =
-        (components[component] || 0) + 1;
-    });
+    low:
+      severityDistribution.Low || 0,
 
-    return {
-      total: history.length,
-      severityCounts,
-      components,
-      componentCount: Object.keys(components).length,
-      todayCount,
-    };
-  }, [history]);
+    unknown:
+      severityDistribution.Unknown || 0,
+  };
+
+  return {
+    total:
+      analytics?.total_bugs || history.length,
+
+    severityCounts,
+
+    components,
+
+    componentCount:
+      Object.keys(components).length,
+
+    todayCount,
+
+    criticalBugs:
+      analytics?.critical_bugs || 0,
+
+    mostAffectedComponent:
+      analytics?.most_affected_component || "N/A",
+
+    mostCommonRootCause:
+      analytics?.most_common_root_cause || "N/A",
+
+    rootCauses:
+      analytics?.root_cause_distribution || {},
+
+    bugThemes:
+      analytics?.bug_themes || {},
+  };
+}, [analytics, history, todayCount]);
 
   const recentAnalyses = history.slice(0, 5);
 
@@ -247,7 +276,7 @@ const todayCount = history.filter(
   <div className="bg-slate-900 rounded-xl p-6 border border-red-800">
     <h3 className="text-slate-400">Critical Bugs</h3>
     <p className="text-4xl font-bold text-red-500">
-      {stats.severityCounts.critical}
+      {stats.criticalBugs}
     </p>
   </div>
 
@@ -273,6 +302,41 @@ const todayCount = history.filter(
     <p className="text-4xl font-bold text-green-400">
       {stats.todayCount}
     </p>
+  </div>
+
+</div>
+{/* =========================
+    PATTERN SUMMARY
+========================= */}
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+  {/* Most Affected Component */}
+
+  <div className="bg-slate-900 rounded-xl p-6 border border-cyan-700">
+
+    <h3 className="text-slate-400">
+      Most Affected Component
+    </h3>
+
+    <p className="text-2xl font-bold text-cyan-400 mt-2">
+      {stats.mostAffectedComponent}
+    </p>
+
+  </div>
+
+  {/* Most Common Root Cause */}
+
+  <div className="bg-slate-900 rounded-xl p-6 border border-pink-700">
+
+    <h3 className="text-slate-400">
+      Most Common Root Cause
+    </h3>
+
+    <p className="text-2xl font-bold text-pink-400 mt-2">
+      {stats.mostCommonRootCause}
+    </p>
+
   </div>
 
 </div>
@@ -371,6 +435,8 @@ const todayCount = history.filter(
         <DashboardCharts
           severityCounts={stats.severityCounts}
           components={stats.components}
+          rootCauses={stats.rootCauses}
+          bugThemes={stats.bugThemes}
           historyData={trendData}
         />
 
