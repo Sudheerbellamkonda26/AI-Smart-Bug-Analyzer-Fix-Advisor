@@ -1,4 +1,4 @@
-# Creation of Intelligent Bug Diagnosis Platform with Fix Recommendation Assistance
+# 🐞 Creation of Intelligent Bug Diagnosis Platform with Fix Recommendation Assistance
 
 An AI-powered bug analysis system that leverages **Retrieval-Augmented Generation (RAG)**, **semantic search**, and a **multi-agent architecture** to analyze software bugs, identify root causes, and retrieve similar historical defects for faster debugging.
 

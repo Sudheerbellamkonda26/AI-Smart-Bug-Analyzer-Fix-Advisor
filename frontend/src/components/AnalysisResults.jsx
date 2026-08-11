@@ -400,7 +400,10 @@ export default function AnalysisResults({ result }) {
 
               <p className="text-slate-300 leading-8">
 
-                {rootCause.root_cause || "No root cause identified."}
+                {rootCause.hypothesis ||
+                 rootCause.root_cause ||
+                 rootCause.cause ||
+                "No root cause identified."}
 
               </p>
 
