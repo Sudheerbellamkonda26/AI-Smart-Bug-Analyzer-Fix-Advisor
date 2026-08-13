@@ -45,6 +45,7 @@ export default function AnalysisResults({ result }) {
               result.submitted_bug || "",
 
             resolution:
+              fix.after ||
               fix.recommended_fix ||
               fix.summary ||
               rootCause.hypothesis ||
@@ -93,6 +94,28 @@ export default function AnalysisResults({ result }) {
     analysis?.duplicate_detection || {};
   const fixRecommendation =
     analysis?.fix_recommendation || {};
+  
+    // ================= AI BEFORE / AFTER FIX =================
+
+  const beforeFix =
+    fixRecommendation.before ||
+    submitted_bug ||
+    "";
+
+  const afterFix =
+    fixRecommendation.after ||
+    fixRecommendation.code_snippet ||
+    "";
+
+  const detectedIssue =
+    fixRecommendation.issue ||
+    fixRecommendation.summary ||
+    "No specific issue identified.";
+
+  const fixExplanation =
+    fixRecommendation.explanation ||
+    fixRecommendation.recommended_fix ||
+    "No explanation available.";
 
   const severityColor = (severity) => {
     switch (severity?.toLowerCase()) {
@@ -656,6 +679,169 @@ export default function AnalysisResults({ result }) {
               Analysis Complete
 
             </p>
+
+          </div>
+
+        </div>
+
+      </div>
+      
+            {/* ================= BEFORE / AFTER FIX ================= */}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-lg hover:border-green-500 transition-all duration-300">
+
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3 mb-8">
+
+          <Wrench
+            size={30}
+            className="text-green-400"
+          />
+
+          AI Bug Fix — Before & After
+
+        </h2>
+
+        <div className="space-y-8">
+
+          {/* ================= BEFORE ================= */}
+
+          <div>
+
+            <div className="flex items-center gap-3 mb-3">
+
+              <span className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold">
+                🐛 BEFORE
+              </span>
+
+              <span className="text-slate-400 text-sm">
+                Original submitted bug
+              </span>
+
+            </div>
+
+            <div className="bg-slate-950 border border-red-900 rounded-xl p-5">
+
+              <pre className="text-red-300 whitespace-pre-wrap overflow-x-auto text-sm leading-7 font-mono">
+                {beforeFix || "No original input available."}
+              </pre>
+
+            </div>
+
+          </div>
+
+          {/* ================= ISSUE ================= */}
+
+          <div className="relative">
+
+            <div className="flex items-center gap-3 mb-3">
+
+              <span className="bg-yellow-600 text-white px-4 py-2 rounded-full font-semibold">
+                🔍 ISSUE DETECTED
+              </span>
+
+            </div>
+
+            <div className="bg-slate-950 border border-yellow-800 rounded-xl p-5">
+
+              <p className="text-yellow-200 text-lg leading-8">
+                {detectedIssue}
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* ================= AFTER ================= */}
+
+          <div>
+
+            <div className="flex items-center gap-3 mb-3">
+
+              <span className="bg-green-600 text-white px-4 py-2 rounded-full font-semibold">
+                ✅ AFTER
+              </span>
+
+              <span className="text-slate-400 text-sm">
+                AI corrected version
+              </span>
+
+            </div>
+
+            <div className="bg-slate-950 border border-green-900 rounded-xl p-5">
+
+              <pre className="text-green-300 whitespace-pre-wrap overflow-x-auto text-sm leading-7 font-mono">
+                {afterFix || "No corrected version generated."}
+              </pre>
+
+            </div>
+
+          </div>
+
+          {/* ================= EXPLANATION ================= */}
+
+          <div>
+
+            <p className="uppercase tracking-wider text-xs text-slate-500 font-semibold mb-3">
+              💡 What Changed?
+            </p>
+
+            <div className="bg-slate-950 border border-cyan-900 rounded-xl p-5">
+
+              <p className="text-slate-300 leading-8">
+                {fixExplanation}
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* ================= VISUAL FLOW ================= */}
+
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-4">
+
+            <div className="bg-red-950 border border-red-800 rounded-xl px-6 py-4 text-center">
+
+              <p className="text-red-400 font-bold">
+                🐛 Bug
+              </p>
+
+              <p className="text-slate-400 text-sm mt-1">
+                Original Input
+              </p>
+
+            </div>
+
+            <div className="text-cyan-400 text-3xl">
+              →
+            </div>
+
+            <div className="bg-yellow-950 border border-yellow-800 rounded-xl px-6 py-4 text-center">
+
+              <p className="text-yellow-400 font-bold">
+                🤖 AI Analysis
+              </p>
+
+              <p className="text-slate-400 text-sm mt-1">
+                Problem Detected
+              </p>
+
+            </div>
+
+            <div className="text-cyan-400 text-3xl">
+              →
+            </div>
+
+            <div className="bg-green-950 border border-green-800 rounded-xl px-6 py-4 text-center">
+
+              <p className="text-green-400 font-bold">
+                ✅ Fixed
+              </p>
+
+              <p className="text-slate-400 text-sm mt-1">
+                Corrected Version
+              </p>
+
+            </div>
 
           </div>
 

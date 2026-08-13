@@ -111,43 +111,100 @@ def generate_fix_recommendation(
     similar_bugs,
 ):
     prompt = f"""
-You are an experienced Software Engineer and Bug Analysis Expert.
+You are an expert Software Debugging Engineer and Code Fix Assistant.
 
-Analyze the following bug report and generate an actionable fix recommendation.
+Your job is to analyze the submitted bug/problem and provide a corrected
+version of the user's input.
+
+IMPORTANT:
+- The user may submit source code, an error message, a sentence, a typo,
+  configuration, SQL query, stack trace, or other text.
+- Identify the actual problem.
+- If the submitted input contains code, preserve the original programming
+  language and provide corrected code.
+- If the submitted input contains a simple text mistake such as a spelling
+  mistake, correct the text directly.
+- DO NOT change correct content unnecessarily.
+- The "before" field MUST contain the original relevant input.
+- The "after" field MUST contain the corrected version.
+- The "after" field should be something the user can directly use.
+- Explain exactly what was changed.
+- If there is no clear correction possible, keep the after field equal to
+  the original input and explain why.
+- Do not invent errors that are not present.
 
 Bug Report:
 {bug_report}
 
-Triage:
+Triage Analysis:
 {json.dumps(triage, indent=2)}
 
 Log Analysis:
 {json.dumps(log_analysis, indent=2)}
 
-Root Cause:
+Root Cause Analysis:
 {json.dumps(root_cause, indent=2)}
 
-Similar Bugs:
+Similar Historical Bugs:
 {json.dumps(similar_bugs, indent=2)}
 
 Return ONLY valid JSON.
 
+Return exactly this structure:
+
 {{
   "summary": "",
+  "issue": "",
+  "before": "",
+  "after": "",
   "recommended_fix": "",
   "steps": [
     "",
     "",
     ""
   ],
+  "explanation": "",
   "code_snippet": "",
   "best_practice": "",
   "confidence": 0.95
 }}
+
+Field instructions:
+
+summary:
+A short description of the problem.
+
+issue:
+Clearly identify what is wrong.
+
+before:
+The original user input that contains the problem.
+
+after:
+The corrected version of the input.
+
+recommended_fix:
+A short description of the fix.
+
+steps:
+Provide 2-5 practical steps explaining how the issue was fixed.
+
+explanation:
+Explain the difference between before and after in simple language.
+
+code_snippet:
+If the issue is related to programming code, provide ONLY the corrected
+code here. If it is not code-related, return an empty string.
+
+best_practice:
+Give one relevant software engineering best practice.
+
+confidence:
+A number between 0 and 1 representing confidence in the correction.
 """
 
     try:
-        print("\n========== GEMINI ==========")
+        print("\n========== GEMINI REMEDIATION ==========")
         print("Calling Gemini API...")
 
         response = client.models.generate_content(
@@ -164,12 +221,34 @@ Return ONLY valid JSON.
 
         text = text.strip()
 
+        # Remove Markdown JSON fences if Gemini returns them
         if text.startswith("```json"):
-            text = text.replace("```json", "").replace("```", "").strip()
+            text = text[7:]
+
+        if text.startswith("```"):
+            text = text[3:]
+
+        if text.endswith("```"):
+            text = text[:-3]
+
+        text = text.strip()
 
         recommendation = json.loads(text)
 
+        # Make sure the new fields always exist
+        recommendation.setdefault("summary", "")
+        recommendation.setdefault("issue", "")
+        recommendation.setdefault("before", bug_report)
+        recommendation.setdefault("after", bug_report)
+        recommendation.setdefault("recommended_fix", "")
+        recommendation.setdefault("steps", [])
+        recommendation.setdefault("explanation", "")
+        recommendation.setdefault("code_snippet", "")
+        recommendation.setdefault("best_practice", "")
+        recommendation.setdefault("confidence", 0.50)
+
         print("JSON parsed successfully.")
+        print("Before/After fix generated.")
         print("============================\n")
 
         return recommendation

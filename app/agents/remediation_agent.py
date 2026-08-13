@@ -1,5 +1,3 @@
-import json
-
 from app.services.llm_service import generate_fix_recommendation
 
 
@@ -30,13 +28,24 @@ class RemediationAgent:
 
             return {
                 "summary": "Unable to generate remediation.",
-                "recommended_fix": "Review the application logs and investigate the reported root cause.",
+                "issue": "The AI remediation service could not analyze the submitted input.",
+                "before": bug_text,
+                "after": bug_text,
+                "recommended_fix": (
+                    "Review the application logs and investigate "
+                    "the reported root cause."
+                ),
                 "steps": [
                     "Review stack trace",
                     "Inspect the affected module",
                     "Apply appropriate validation"
                 ],
+                "explanation": (
+                    "No automatic correction could be generated."
+                ),
                 "code_snippet": "",
-                "best_practice": "Improve exception handling and input validation.",
+                "best_practice": (
+                    "Improve exception handling and input validation."
+                ),
                 "confidence": 0.50
             }
